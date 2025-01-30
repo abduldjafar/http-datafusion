@@ -19,7 +19,6 @@ use datafusion::datasource::provider_as_source;
 use datafusion::prelude::{DataFrame, SessionContext};
 use datafusion_expr::LogicalPlanBuilder;
 use http_datafusion::datasources::HttpDataSource;
-use std::io::{stdin, stdout, Write};
 use std::sync::Arc;
 use tokio;
 
@@ -40,7 +39,7 @@ async fn main() -> datafusion::error::Result<()> {
 
     let  dataframe = DataFrame::new(ctx.state(), logical_plan).select_columns(&["id"])?;
 
-    println!("{:?}",dataframe.count().await?);
+    println!("{:?}",dataframe.show().await?);
    
 
     Ok(())
