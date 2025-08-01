@@ -40,7 +40,7 @@ impl HttpExec {
         PlanProperties::new(
             eq_properties,
             Partitioning::UnknownPartitioning(1),
-            ExecutionMode::Unbounded,
+            ExecutionMode::Bounded,
         )
     }
 }
