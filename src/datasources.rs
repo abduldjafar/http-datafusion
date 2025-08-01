@@ -105,9 +105,9 @@ impl HttpDataSource {
     /// * `Result<()>` - Success or error result
     pub async fn populate_data(
         &self,
-        main_url: String,
+        main_url: &str,
         start_page: Option<String>,
-        method: String,
+        method: &str,
     ) -> Result<()> {
         let mut temp_data: Vec<Value> = vec![];
 
@@ -118,11 +118,11 @@ impl HttpDataSource {
                 let url = format!("{}?page={}", main_url, current_page);
                 println!("processing {}", url);
                 
-                let cloned_method = method.clone();
+               
                 
                 // Fetch data using `data_extraction`
                 let data = self
-                    .data_extraction(&url, cloned_method)
+                    .data_extraction(&url, method)
                     .await
                     .map_err(|e| {
                         datafusion::error::DataFusionError::Execution(format!(
@@ -205,12 +205,12 @@ impl HttpDataSource {
     /// 
     /// # Returns
     /// * `Result<Value>` - Parsed JSON response or error
-    async fn data_extraction(&self, url: &str, method: String) -> Result<Value> {
+    async fn data_extraction(&self, url: &str, method: &str) -> Result<Value> {
         // Create a new HTTP client
         let client = Client::new();
 
         // Determine the HTTP method
-        let method = match method.as_str() {
+        let method = match method {
             "GET" => reqwest::Method::GET,
             "POST" => reqwest::Method::POST,
             _ => {
