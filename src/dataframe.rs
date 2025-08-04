@@ -1,8 +1,9 @@
 use datafusion::prelude::SessionContext;
 use std::sync::Arc;
 use crate::datasources::HttpDataSource;
+use crate::error::Result;
 
-pub async fn url(ctx: SessionContext,url: &str, method: &str, table_name: &str,start_page:Option<String>) -> datafusion::error::Result<(SessionContext)> {
+pub async fn url(ctx: SessionContext,url: &str, method: &str, table_name: &str,start_page:Option<String>) -> Result<SessionContext> {
     // Create session context
     
     // Create HTTP data source
