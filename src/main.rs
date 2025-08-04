@@ -39,9 +39,11 @@ async fn main() -> Result<()> {
         let table_name = source.name;
 
         ctx = dataframe::url(ctx, &api_url, &http_method, &table_name,None).await?;
+        if let Some(sql) = source.sql {
+            let df = ctx.sql(&sql).await?;
+            df.show().await?;
+        }
     }
-    let df = ctx.sql("SELECT * FROM posts").await?;
-    df.show().await?;
 
     Ok(())
 }

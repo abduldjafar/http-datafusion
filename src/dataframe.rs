@@ -10,7 +10,6 @@ pub async fn url(ctx: SessionContext,url: &str, method: &str, table_name: &str,s
     let db = HttpDataSource::default();
     
     // Populate data from API
-    println!("📡 Fetching data from API...");
     db.populate_data(
         url, 
         start_page, 

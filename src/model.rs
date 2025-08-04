@@ -13,6 +13,8 @@ pub struct Source {
     pub method: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub pagination: Option<Pagination>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub sql: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -38,6 +40,7 @@ impl Source {
             url,
             method: None,
             pagination: None,
+            sql: None,
         }
     }
 }
