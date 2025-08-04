@@ -4,8 +4,12 @@
 //! This example fetches data from JSONPlaceholder API and executes SQL queries
 //! against the HTTP data as if it were a traditional database table.
 
+use std::fs;
+
+use datafusion::prelude::SessionContext;
 use tokio;
-use http_datafusion::dataframe;
+use http_datafusion::{dataframe, model::Config};
+use http_datafusion::error::Result;
 
 /// Main application entry point
 /// 
@@ -15,51 +19,28 @@ use http_datafusion::dataframe;
 /// # Returns
 /// * `datafusion::error::Result<()>` - Success or DataFusion error
 #[tokio::main]
-async fn main() -> datafusion::error::Result<()> {
+async fn main() -> Result<()> {
+
+    // Read the YAML file
+    let yaml_content = fs::read_to_string("config.yaml")?;
+
+    // Parse YAML into our struct, mapping errors to DataFusionError
+    let config: Config = serde_yaml::from_str(&yaml_content)?;
+
     // ========================================================================
     // HTTP Data Source Configuration
     // ========================================================================
-    
-    // API endpoint for sample JSON data
-    let api_url = "https://jsonplaceholder.typicode.com/posts";
-    
-    // HTTP method for the request
-    let http_method = "GET";
-    
-    // Table name for SQL queries
-    let table_name = "posts";
-    
-    // No pagination (None = single endpoint fetch)
-    let pagination = None;
 
-    // ========================================================================
-    // DataFusion Context Setup
-    // ========================================================================
-    
-    // Create DataFusion context with HTTP data source
-    // This fetches data from the API and registers it as a queryable table
-    let ctx = dataframe::url(
-        api_url,
-        http_method,
-        table_name,
-        pagination,
-    ).await?;
+    let mut ctx = SessionContext::new();
 
-    // ========================================================================
-    // SQL Query Execution
-    // ========================================================================
-    
-    // Execute SQL query against the HTTP data source
-    // The API data is now queryable as a regular SQL table
-    let df = ctx
-        .sql("SELECT * FROM posts LIMIT 5")
-        .await?;
+    for source in config.sources {
+        let api_url = source.url;
+        let http_method = source.method.unwrap_or("GET".to_string());
+        let table_name = source.name;
 
-    // ========================================================================
-    // Results Display
-    // ========================================================================
-    
-    // Display query results in a formatted table
+        ctx = dataframe::url(ctx, &api_url, &http_method, &table_name,None).await?;
+    }
+    let df = ctx.sql("SELECT * FROM posts").await?;
     df.show().await?;
 
     Ok(())

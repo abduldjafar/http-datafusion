@@ -14,3 +14,7 @@ async-trait = "0.1"          # For async methods in trait implementations
 arrow = "36.0.0"            # Apache Arrow support for columnar data
 datafusion-expr = "43.0.0"
 anyhow = "1.0.93"
+serde_yaml = "0.9"
+tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
+tracing = "0.1.40"
+
