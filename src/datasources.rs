@@ -9,18 +9,19 @@ use std::io::{BufReader, Cursor};
 use std::sync::{Arc, Mutex};
 
 use async_trait::async_trait;
-use reqwest::Client;
+use reqwest::{Client, ClientBuilder};
 use serde_json::Value;
 
 use datafusion::arrow::datatypes::{Schema, SchemaRef};
 use datafusion::arrow::error::ArrowError;
 use datafusion::arrow::json::reader::infer_json_schema_from_iterator;
 use datafusion::catalog::{Session, TableProvider};
-use datafusion::error::Result;
+use crate::error::{Error, Result};
 use datafusion::physical_plan::ExecutionPlan;
 use datafusion_expr::{Expr, TableType};
 
 use crate::execution::HttpExec;
+use crate::model::Source;
 
 // ============================================================================
 // Core Data Structures
@@ -41,6 +42,8 @@ pub struct HttpDataSourceInner {
     pub first_data: Value,
     /// Inferred Arrow schema from the data
     pub schema: Schema,
+    /// Source configuration
+    pub source: Source,
 }
 
 // ============================================================================
@@ -64,6 +67,7 @@ impl Default for HttpDataSource {
                 data: Default::default(),
                 first_data: Default::default(),
                 schema: Schema::empty(),
+                source: Source::default(),
             })),
         }
     }
@@ -86,7 +90,7 @@ impl HttpDataSource {
         &self,
         projections: Option<&Vec<usize>>,
         schema: SchemaRef,
-    ) -> Result<Arc<dyn ExecutionPlan>> {
+    ) -> datafusion::error::Result<Arc<dyn ExecutionPlan>> {
         Ok(Arc::new(HttpExec::new(projections, schema, self.clone())))
     }
 
@@ -214,9 +218,7 @@ impl HttpDataSource {
             "GET" => reqwest::Method::GET,
             "POST" => reqwest::Method::POST,
             _ => {
-                return Err(datafusion::error::DataFusionError::Execution(format!(
-                    "No Method Available"
-                )))
+                return Err(Error::ReqwestError("No Method Available".to_string()))
             }
         };
 
@@ -261,10 +263,7 @@ impl HttpDataSource {
 
             Ok(json)
         } else {
-            Err(datafusion::error::DataFusionError::Execution(format!(
-                "HTTP request failed with status code: {}",
-                response.status()
-            )))
+            Err(Error::ReqwestError(format!("HTTP request failed with status code: {}", response.status())))
         }
     }
 
@@ -283,6 +282,39 @@ impl HttpDataSource {
     /// * If JSON serialization fails
     /// * If no data is available for schema inference
     /// * If schema inference from JSON data fails
+    
+    async fn data_extraction_from_source(&self, source: &Source) -> Result<()> {
+        // Create a new HTTP client
+        let  client = ClientBuilder::new().build()?;
+       
+
+        let url = &source.url;
+        let method = source.method.clone().unwrap_or("GET".to_string());
+
+        // Convert method String to reqwest::Method
+        let method = method.parse::<reqwest::Method>().map_err(|e| {
+            Error::ReqwestError(format!("Invalid HTTP method: {}", e))
+        })?;
+
+        let mut response_builder = client.request(method, url);
+
+        if let Some(pagination) = &source.pagination {
+            let start_page = pagination.start_page.unwrap_or(1);
+            let end_page = pagination.end_page.unwrap_or(10);
+            let page_size = pagination.page_size.unwrap_or(10);
+            let page_param = pagination.page_param.clone().unwrap_or("page".to_string());
+            let page_size_param = pagination.page_size_param.clone().unwrap_or("page_size".to_string());
+            let page_size_default = pagination.page_size_default.unwrap_or(10);
+
+            response_builder = response_builder.query(&[(page_param, start_page,), (page_size_param, page_size)]);
+
+        };
+
+        Ok(())
+
+        
+    }
+
     fn _schema(&self, first_item: Value) -> Schema {
         // Serialize the first item to JSON string
         let json_data = serde_json::to_string(&first_item).unwrap_or_else(|_| {
@@ -354,7 +386,7 @@ impl TableProvider for HttpDataSource {
         // filters and limit can be used here to inject some push-down operations if needed
         _filters: &[Expr],
         _limit: Option<usize>,
-    ) -> Result<Arc<dyn ExecutionPlan>> {
+    ) -> datafusion::error::Result<Arc<dyn ExecutionPlan>> {
         self.create_physical_plan(projection, self.schema()).await
     }
 }

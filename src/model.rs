@@ -57,3 +57,21 @@ impl Default for Pagination {
         }
     }
 }
+
+impl Source {
+    pub fn get_sql(&self) -> String {
+        self.sql.clone().unwrap_or_default()
+    }
+}
+
+impl Default for Source {
+    fn default() -> Self {
+        Self {
+            name: "".to_string(),
+            url: "".to_string(),
+            method: None,
+            pagination: None,
+            sql: None,
+        }
+    }
+}

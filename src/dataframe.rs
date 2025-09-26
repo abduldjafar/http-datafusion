@@ -2,6 +2,7 @@ use datafusion::prelude::SessionContext;
 use std::sync::Arc;
 use crate::datasources::HttpDataSource;
 use crate::error::Result;
+use crate::model::Source;
 
 pub async fn url(ctx: SessionContext,url: &str, method: &str, table_name: &str,start_page:Option<String>) -> Result<SessionContext> {
     // Create session context
@@ -22,3 +23,7 @@ pub async fn url(ctx: SessionContext,url: &str, method: &str, table_name: &str,s
     Ok(ctx)
 }
 
+pub async fn from_source(ctx: SessionContext,source: &Source) -> Result<SessionContext> {
+
+    Ok(ctx)
+}

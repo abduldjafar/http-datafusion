@@ -9,7 +9,7 @@ pub enum Error {
     DataFusionError(String),
     YamlError(String),
     IoError(String),
-
+    ReqwestError(String),
 
 }
 
@@ -36,4 +36,5 @@ impl_from_error!(
     datafusion::error::DataFusionError => DataFusionError,
     serde_yaml::Error => YamlError,
     std::io::Error => IoError,
+    reqwest::Error => ReqwestError,
 );
